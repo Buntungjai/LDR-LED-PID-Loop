@@ -1,0 +1,56 @@
+#include <PID_v1.h>
+
+#define PIN_INPUT A0  // เปลี่ยนเป็น A0, A1... ตามขา Analog ที่ใช้จริง
+#define PIN_OUTPUT 3  // ใช้ขา PWM
+
+//Define Variables we'll be connecting to
+double Setpoint, Input, Output;
+
+//Specify the links and initial tuning parameters
+double Kp=2, Ki=0.5, Kd=0;
+// PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, REVERSE);
+
+void setup()
+{
+  // 1. *** ส่วนที่เพิ่ม: เริ่มต้น Serial Communication ***
+  Serial.begin(9600); 
+  
+  //initialize the variables we're linked to
+  // อ่านค่า Input ครั้งแรกเพื่อกำหนดค่าเริ่มต้น
+  Input = analogRead(PIN_INPUT); 
+  
+  // กำหนดค่า Setpoint (ควรอยู่ในช่วงเดียวกับ Input: 0-1023)
+  Setpoint = 250; // เปลี่ยนจาก 100 เป็น 500 เพื่อให้อยู่ในช่วงกลาง
+  
+  // Set PID Output Limits (สำคัญสำหรับ analogWrite)
+  myPID.SetOutputLimits(0, 255); // Output ของ PID จะถูกจำกัดให้อยู่ระหว่าง 0-255
+
+  //turn the PID on
+  myPID.SetMode(AUTOMATIC);
+}
+
+void loop()
+{
+  // 1. อ่านค่า Input ปัจจุบัน (จาก LDR/เซ็นเซอร์วัดแสง)
+  Input = analogRead(PIN_INPUT);
+  
+  // 2. คำนวณค่า PID
+  myPID.Compute();
+  
+  // 3. ส่งค่า Output ไปควบคุมความสว่าง LED (PWM 0-255)
+  analogWrite(PIN_OUTPUT, Output);
+  
+  // 4. *** ส่วนที่เพิ่ม: พิมพ์ค่าเพื่อ Debug *** และในที่นี้ คอมเม้นเพื่อดู plotting ได้
+  //Serial.print("Input: ");
+  Serial.print(Input);
+  Serial.print("\t");
+  //Serial.print("\t Setpoint: ");
+  Serial.print(Setpoint);
+  Serial.print("\t");
+  //Serial.print("\t Output: ");
+  Serial.println(Output);
+  
+  // หน่วงเวลาเล็กน้อยเพื่อให้ Serial Monitor อ่านง่าย
+  delay(10); 
+}
